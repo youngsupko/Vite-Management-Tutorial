@@ -6,12 +6,24 @@ import TableBody from '@mui/material/TableBody';
 import TableRow from '@mui/material/TableRow';
 import TableCell from '@mui/material/TableCell';
 import Paper from '@mui/material/Paper';
+import CircularProgress from '@mui/material/CircularProgress';
 import { styled } from '@mui/material/styles';
-import { useState, useEffect } from 'react'; // Hook 임포트
+import { useState, useEffect } from 'react';
+
+/* 레이아웃 및 컴포넌트 스타일 정의 */
+const RootContainer = styled('div')({
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'flex-start',
+  width: '100%',
+  minHeight: '100vh',
+});
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
-  width: '100%',
+  width: '90%',
+  maxWidth: '1200px',
   marginTop: theme.spacing(3),
+  marginBottom: theme.spacing(3),
   overflowX: "auto",
 }));
 
@@ -19,61 +31,72 @@ const StyledTable = styled(Table)({
   minWidth: 1080,
 });
 
+const ProgressWrapper = styled(TableCell)({
+  textAlign: 'center',
+  padding: '50px 0'
+});
+
 function App() {
-  // 1. state 선언 (함수형에서는 useState 사용)
+  /* 상태 관리 변수 정의 */
   const [customers, setCustomers] = useState(null);
 
-  // 2. API 호출 함수
+  /* 서버 API 데이터 호출 함수 */
   const callApi = async () => {
     const response = await fetch('/api/customers');
     const body = await response.json();
     return body;
   };
 
-  // 3. 생명주기 관리 (componentDidMount 대신 useEffect 사용)
+  /* 컴포넌트 마운트 시 데이터 로드 실행 */
   useEffect(() => {
     callApi()
       .then(res => setCustomers(res))
       .catch(err => console.log(err));
-  }, []); // 빈 배열[]은 컴포넌트가 처음 나타날 때만 실행됨을 의미
+  }, []);
 
   return (
-    <StyledPaper>
-      <StyledTable>
-        <TableHead>
-          <TableRow>
-            <TableCell>번호</TableCell>
-            <TableCell>이미지</TableCell>
-            <TableCell>이름</TableCell>
-            <TableCell>생년월일</TableCell>
-            <TableCell>성별</TableCell>
-            <TableCell>직업</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {
-            // 4. this.state.customers 대신 customers 사용
-            customers ? customers.map(c => (
-              <Customer 
-                key={c.id} 
-                id={c.id} 
-                image={c.image} 
-                name={c.name} 
-                birthday={c.birthday} 
-                gender={c.gender} 
-                job={c.job} 
-              />
-            )) : (
-              // 데이터를 불러오는 중일 때 표시할 내용
-              <TableRow>
-                <TableCell colSpan="6" align="center">데이터를 불러오는 중입니다...</TableCell>
-              </TableRow>
-            )
-          }
-        </TableBody>
-      </StyledTable>
-    </StyledPaper>
+    /* 전체 화면 레이아웃 구성 */
+    <RootContainer>
+      <StyledPaper>
+        <StyledTable>
+          {/* 테이블 헤더 영역 */}
+          <TableHead>
+            <TableRow>
+              <TableCell>번호</TableCell>
+              <TableCell>이미지</TableCell>
+              <TableCell>이름</TableCell>
+              <TableCell>생년월일</TableCell>
+              <TableCell>성별</TableCell>
+              <TableCell>직업</TableCell>
+            </TableRow>
+          </TableHead>
+          {/* 테이블 바디 및 데이터 로딩 처리 영역 */}
+          <TableBody>
+            {
+              customers ? customers.map(c => (
+                <Customer 
+                  key={c.id} 
+                  id={c.id} 
+                  image={c.image} 
+                  name={c.name} 
+                  birthday={c.birthday} 
+                  gender={c.gender} 
+                  job={c.job} 
+                />
+              )) : (
+                <TableRow>
+                  <ProgressWrapper colSpan="6">
+                    <CircularProgress color="primary" />
+                  </ProgressWrapper>
+                </TableRow>
+              )
+            }
+          </TableBody>
+        </StyledTable>
+      </StyledPaper>
+    </RootContainer>
   );
 }
 
 export default App;
+
