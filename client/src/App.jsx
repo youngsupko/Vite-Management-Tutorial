@@ -1,22 +1,22 @@
-import Customer from './components/Customer';
-import './App.css';
-import Table from '@mui/material/Table';
-import TableHead from '@mui/material/TableHead';
-import TableBody from '@mui/material/TableBody';
-import TableRow from '@mui/material/TableRow';
-import TableCell from '@mui/material/TableCell';
-import Paper from '@mui/material/Paper';
-import CircularProgress from '@mui/material/CircularProgress';
-import { styled } from '@mui/material/styles';
 import { useState, useEffect } from 'react';
+import { styled } from '@mui/material/styles';
+import { 
+  Table, TableHead, TableBody, TableRow, TableCell, 
+  Paper, CircularProgress 
+} from '@mui/material';
 
-/* 레이아웃 및 컴포넌트 스타일 정의 */
+import Customer from './components/Customer';
+import CustomerAdd from './components/CustomerAdd';
+import './App.css';
+
+/** [스타일 정의] 레이아웃 및 테이블 시각적 요소 설정 */
 const RootContainer = styled('div')({
   display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'flex-start',
+  flexDirection: 'column',
+  alignItems: 'center',
   width: '100%',
   minHeight: '100vh',
+  paddingBottom: '50px'
 });
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
@@ -37,29 +37,41 @@ const ProgressWrapper = styled(TableCell)({
 });
 
 function App() {
-  /* 상태 관리 변수 정의 */
+  /** [상태 관리] 고객 데이터 저장 (초기값 null) */
   const [customers, setCustomers] = useState(null);
 
-  /* 서버 API 데이터 호출 함수 */
+  /** [데이터 통신] 백엔드로부터 고객 목록 데이터를 비동기 호출 */
   const callApi = async () => {
     const response = await fetch('/api/customers');
+    if (!response.ok) throw new Error('서버 응답 오류');
     const body = await response.json();
     return body;
   };
 
-  /* 컴포넌트 마운트 시 데이터 로드 실행 */
-  useEffect(() => {
+  /** [화면 갱신] 리스트를 새로고침하고 로딩 상태를 관리 */
+  const stateRefresh = () => {
+    setCustomers(null); 
     callApi()
-      .then(res => setCustomers(res))
-      .catch(err => console.log(err));
+      .then(res => {
+        // 서버 응답이 배열인지 최종 확인 후 상태 업데이트
+        setCustomers(Array.isArray(res) ? res : []);
+      })
+      .catch(err => {
+        console.error("데이터 로드 실패:", err);
+        setCustomers([]); // 에러 발생 시 빈 배열로 설정하여 .map 오류 방지
+      });
+  };
+
+  /** [생명주기] 마운트 시 최초 데이터 호출 */
+  useEffect(() => {
+    stateRefresh();
   }, []);
 
   return (
-    /* 전체 화면 레이아웃 구성 */
     <RootContainer>
+      {/* [데이터 출력 영역] */}
       <StyledPaper>
         <StyledTable>
-          {/* 테이블 헤더 영역 */}
           <TableHead>
             <TableRow>
               <TableCell>번호</TableCell>
@@ -70,10 +82,10 @@ function App() {
               <TableCell>직업</TableCell>
             </TableRow>
           </TableHead>
-          {/* 테이블 바디 및 데이터 로딩 처리 영역 */}
           <TableBody>
-            {
-              customers ? customers.map(c => (
+            {/* 데이터가 존재하고 배열인 경우에만 출력 (방어적 프로그래밍) */}
+            {Array.isArray(customers) ? (
+              customers.map(c => (
                 <Customer 
                   key={c.id} 
                   id={c.id} 
@@ -83,20 +95,22 @@ function App() {
                   gender={c.gender} 
                   job={c.job} 
                 />
-              )) : (
-                <TableRow>
-                  <ProgressWrapper colSpan="6">
-                    <CircularProgress color="primary" />
-                  </ProgressWrapper>
-                </TableRow>
-              )
-            }
+              ))
+            ) : (
+              <TableRow>
+                <ProgressWrapper colSpan="6">
+                  <CircularProgress color="primary" />
+                </ProgressWrapper>
+              </TableRow>
+            )}
           </TableBody>
         </StyledTable>
       </StyledPaper>
+
+      {/* [데이터 입력 영역] */}
+      <CustomerAdd stateRefresh={stateRefresh} />
     </RootContainer>
   );
 }
 
 export default App;
-
